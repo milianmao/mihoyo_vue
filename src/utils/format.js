@@ -1,6 +1,7 @@
 import Vue from 'vue'
 
 const format = {
+	// 卡密级别
 	formatCardsLevel: (level) => {
 		switch (level) {
 			case 3:
@@ -35,6 +36,24 @@ const format = {
 			':' +
 			second
 		)
+	},
+	formatPowerLevel: (power) => {
+		switch (true) {
+			case power === 3:
+				return '开发'
+
+			case power === 2:
+				return '超管'
+
+			case power === 1:
+				return '管理'
+
+			case power === 0:
+				return '用户'
+
+			default:
+				return 'Error'
+		}
 	},
 }
 

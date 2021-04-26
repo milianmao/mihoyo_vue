@@ -16,6 +16,12 @@ import {
 	Tag,
 	Select,
 	message,
+	Table,
+	Slider,
+	Switch,
+	Tooltip,
+	Pagination,
+	Modal,
 } from 'ant-design-vue'
 
 Vue.use(FormModel)
@@ -31,5 +37,11 @@ Vue.use(Col)
 Vue.use(Tag)
 Vue.use(Select)
 Vue.use(Popover)
+Vue.use(Table)
+Vue.use(Slider)
+Vue.use(Switch)
+Vue.use(Tooltip)
+Vue.use(Pagination)
+Vue.use(Modal)
 Vue.prototype.$notification = notification
 Vue.prototype.$message = message

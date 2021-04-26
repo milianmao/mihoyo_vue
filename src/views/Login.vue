@@ -265,6 +265,8 @@ export default {
 					'登录成功',
 					'欢迎用户' + res.data.user_name
 				)
+				// 保存用户信息
+				this.$store.commit('saveUserInfo', res.data)
 				this.$router.push('/home')
 			})
 		},
