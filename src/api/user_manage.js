@@ -26,3 +26,31 @@ export function usersChangeStatus(data) {
 		data,
 	})
 }
+
+// 修改用户信息
+
+export function usersChangeInfos(data) {
+	return request({
+		url: '/users/infos',
+		method: 'post',
+		data,
+	})
+}
+
+// 修改用户权限
+export function usersChangePower(data) {
+	return request({
+		url: '/users/power',
+		method: 'post',
+		data,
+	})
+}
+
+// 删除用户UID
+export function usersCleanUID(data) {
+	return request({
+		url: '/users/clean',
+		method: 'post',
+		data,
+	})
+}

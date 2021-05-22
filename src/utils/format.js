@@ -1,5 +1,5 @@
 import Vue from 'vue'
-
+// 格式化
 const format = {
 	// 卡密级别
 	formatCardsLevel: (level) => {

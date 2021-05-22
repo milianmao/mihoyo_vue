@@ -6,6 +6,8 @@
 					addon-before="用户名"
 					size="large"
 					placeholder="请输入内容"
+					v-model="usersListForm.user_name"
+					allowClear
 				></a-input>
 			</a-col>
 			<a-col>
@@ -13,6 +15,8 @@
 					addon-before="QQ"
 					size="large"
 					placeholder="请输入内容"
+					v-model="usersListForm.qq_number"
+					allowClear
 				></a-input>
 			</a-col>
 			<a-col>
@@ -20,10 +24,17 @@
 					addon-before="邮箱"
 					size="large"
 					placeholder="请输入内容"
+					v-model="usersListForm.e_mail"
+					allowClear
 				></a-input>
 			</a-col>
 			<a-col>
-				<a-button type="primary" icon="search" size="large"></a-button>
+				<a-button
+					type="primary"
+					icon="search"
+					size="large"
+					@click="getUsersList"
+				></a-button>
 			</a-col>
 		</a-row>
 		<a-row :gutter="[10, 20]">
@@ -38,6 +49,7 @@
 					"
 					bordered
 					:pagination="false"
+					:loading="loading"
 				>
 					>
 					<a-slider
@@ -70,11 +82,21 @@
 					<div slot="action" slot-scope="text, record">
 						<a-tooltip>
 							<template slot="title">
-								权限
+								编辑
 							</template>
 							<a-button
 								type="primary"
 								icon="edit"
+								@click="InfoEdit(record)"
+							></a-button>
+						</a-tooltip>
+						<a-tooltip>
+							<template slot="title">
+								权限
+							</template>
+							<a-button
+								type="primary"
+								icon="tool"
 								@click="powerEdit(record)"
 							></a-button>
 						</a-tooltip>
@@ -82,7 +104,19 @@
 							<template slot="title">
 								删除
 							</template>
-							<a-button type="danger" icon="delete"></a-button>
+							<a-popconfirm
+								placement="top"
+								title="是否删除该用户"
+								ok-text="删除"
+								cancel-text="取消"
+								@confirm="usersCleanUID(record)"
+								@cancel="cancelDelete"
+							>
+								<a-button
+									type="danger"
+									icon="delete"
+								></a-button>
+							</a-popconfirm>
 						</a-tooltip>
 					</div>
 				</a-table>
@@ -105,13 +139,57 @@
 				/>
 			</a-col>
 		</a-row>
+		<!-- 信息编辑 -->
 		<a-modal
-			title="Title"
+			title="信息更改"
 			:visible="visible"
 			:confirm-loading="confirmLoading"
-			@ok="handleOk"
+			@ok="changeInfos"
 			@cancel="visible = false"
 		>
+			<a-form-model
+				:model="infoForm"
+				:label-col="labelCol"
+				:wrapper-col="wrapperCol"
+				:rules="infoFormRules"
+				ref="infoFormRef"
+			>
+				<a-form-model-item label="ID: ">
+					<a-input :value="infoForm.id" disabled></a-input>
+				</a-form-model-item>
+
+				<a-form-model-item label="用户名: " prop="user_name">
+					<a-input v-model="infoForm.user_name" clearable></a-input>
+				</a-form-model-item>
+
+				<a-form-model-item label="QQ号: " prop="qq_number">
+					<a-input v-model="infoForm.qq_number" clearable></a-input>
+				</a-form-model-item>
+
+				<a-form-model-item label="邮箱: " prop="e_mail">
+					<a-input v-model="infoForm.e_mail" clearable></a-input>
+				</a-form-model-item>
+			</a-form-model>
+		</a-modal>
+		<!-- 权限修改 -->
+		<a-modal
+			title="权限修改"
+			:visible="powerEditVisible"
+			:confirm-loading="powerConfirmLoading"
+			@ok="changePower"
+			@cancel="powerEditVisible = false"
+		>
+			<a-radio-group name="radioGroup" v-model="curOperUser.power">
+				<a-radio :value="2">
+					超管
+				</a-radio>
+				<a-radio :value="1">
+					管理
+				</a-radio>
+				<a-radio :value="0">
+					用户
+				</a-radio>
+			</a-radio-group>
 		</a-modal>
 	</a-card>
 </template>
@@ -120,7 +198,11 @@ import {
 	getUsersList,
 	usersChangeTimes,
 	usersChangeStatus,
+	usersChangeInfos,
+	usersChangePower,
+	usersCleanUID,
 } from '@/api/user_manage.js'
+import _ from 'loadsh'
 const columns = [
 	{
 		title: 'ID',
@@ -177,6 +259,39 @@ export default {
 		this.getUsersList()
 	},
 	data() {
+		// 验证字符串是否有特殊字符
+		const checkSpecialKey = (str) => {
+			var specialKey = "(){}''\\[]<>！￥……（）【】‘；：”“'。，、？‘"
+			for (var i = 0; i < str.length; i++) {
+				if (specialKey.indexOf(str.substr(i, 1)) !== -1) return false
+			}
+			return true
+		}
+		// 自定义表单验证函数
+		const checkRules = (rule, value, callback) => {
+			if (!value) return callback()
+			setTimeout(() => {
+				switch (rule.fullField) {
+					case 'qq_number':
+						const qqErr = new Error('请输入正确的QQ号')
+						if (isNaN(value)) return callback(qqErr)
+						if (value.length < 5 || value.length > 15)
+							return callback(qqErr)
+						return callback()
+					case 'e_mail':
+						const emErr = new Error('请输入正确的邮箱')
+						const mailReg = /^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+(.[a-zA-Z0-9_-])+/
+						if (value.length < 8 || value.length > 128)
+							return callback(emErr)
+						if (!mailReg.test(value)) return callback(emErr)
+						return callback()
+					default:
+						const err = new Error('请不要输入奇奇怪怪的符号')
+						if (!checkSpecialKey(value)) return callback(err)
+						return callback()
+				}
+			}, 100)
+		}
 		return {
 			columns,
 			users: [],
@@ -192,16 +307,59 @@ export default {
 				id: 0,
 				times: 0,
 			},
+			infoForm: {
+				id: 0,
+				user_name: '',
+				qq_number: '',
+				e_mail: '',
+			},
 			// 查询总数
 			total: 0,
 			pageSizeOptions: ['5', '8', '15', '20', '50', '100'],
 			visible: false,
 			confirmLoading: false,
+			loading: false,
+			labelCol: { span: 4 },
+			wrapperCol: { span: 14 },
+			// 表单验证规则对象
+			infoFormRules: {
+				user_name: [
+					{
+						required: true,
+						message: '请输入用户名',
+						trigger: 'blur',
+					},
+					{
+						min: 3,
+						max: 32,
+						message: '用户名长度在 3 到 32 个字符内',
+						trigger: 'blur',
+					},
+					{ validator: checkRules, trigger: 'blur' },
+				],
+				qq_number: [{ validator: checkRules, trigger: 'blur' }],
+				e_mail: [{ validator: checkRules, trigger: 'blur' }],
+			},
+			powerEditVisible: false,
+			powerConfirmLoading: false,
+			// 当前操作用户详细数据
+			curOperUser: {
+				id: 0,
+				user_name: '',
+				qq_number: '',
+				e_mail: '',
+				status: false,
+				power: 0,
+				gen_times: 0,
+				avatar: '',
+				created_at: '',
+			},
 		}
 	},
 	methods: {
 		// 获取用户列表
 		async getUsersList() {
+			this.loading = true
 			const { data: res } = await getUsersList(this.usersListForm)
 			console.log(res)
 			if (res.status !== 200)
@@ -228,6 +386,7 @@ export default {
 					}
 				})
 			}
+			this.loading = false
 		},
 		async handelGenTime(user) {
 			this.changeTimesForm.id = user.id
@@ -267,9 +426,63 @@ export default {
 			this.usersListForm.page_num = page
 			this.getUsersList()
 		},
-		handleOk() {},
-		powerEdit(user) {
+		changeInfos() {
+			this.confirmLoading = true
+			this.$refs.infoFormRef.validate(async (valid) => {
+				if (!valid) return
+				const { data: res } = await usersChangeInfos(this.infoForm)
+				console.log(res)
+				if (res.status !== 200)
+					return this.$openNotificationWithIcon(
+						'error',
+						`修改失败：状态码${res.status}`,
+						res.msg
+					)
+				this.$openNotificationWithIcon(
+					'success',
+					`修改成功：状态码${res.status}`,
+					res.msg
+				)
+				this.confirmLoading = false
+				this.visible = false
+				this.getUsersList()
+			})
+		},
+		InfoEdit(user) {
 			this.visible = true
+			this.infoForm = _.cloneDeep(user)
+		},
+		powerEdit(user) {
+			this.curOperUser = _.cloneDeep(user)
+			this.powerEditVisible = true
+		},
+		async changePower() {
+			this.powerConfirmLoading = true
+			const { data: res } = await usersChangePower({
+				id: this.curOperUser.id,
+				power: this.curOperUser.power,
+			})
+			console.log(res)
+			if (res.status !== 200)
+				return this.$openNotificationWithIcon(
+					'error',
+					`修改失败：状态码${res.status}`,
+					res.msg
+				)
+			this.$openNotificationWithIcon(
+				'success',
+				`修改成功：状态码${res.status}`,
+				res.msg
+			)
+			this.powerConfirmLoading = false
+			this.powerEditVisible = false
+			this.getUsersList()
+		},
+		async usersCleanUID(user) {
+			const { data: res } = await usersCleanUID()
+		},
+		cancelDelete() {
+			this.$message.info('取消清除')
 		},
 	},
 }

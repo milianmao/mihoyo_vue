@@ -266,6 +266,7 @@ export default {
 					'欢迎用户' + res.data.user_name
 				)
 				// 保存用户信息
+				window.sessionStorage.setItem('user', JSON.stringify(res.data))
 				this.$store.commit('saveUserInfo', res.data)
 				this.$router.push('/home')
 			})
@@ -283,7 +284,7 @@ export default {
 				if (res.status !== 200)
 					return this.$openNotificationWithIcon(
 						'error',
-						'注册失败：状态码 ' + res.status,
+						`注册失败：状态码${res.status}`,
 						res.msg
 					)
 				// 注册成功

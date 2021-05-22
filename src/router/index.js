@@ -30,6 +30,14 @@ const routes = [
 				path: '/managea_users',
 				component: () => import('@/components/Manage/Users_manage.vue'),
 			},
+			{
+				path: '/managea_project',
+				component: () => import('@/components/Manage/Card_manage.vue'),
+			},
+			{
+				path: '/managea_cards',
+				component: () => import('@/components/Manage/Cards_manage.vue'),
+			},
 		],
 	},
 ]

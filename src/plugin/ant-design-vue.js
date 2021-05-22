@@ -22,6 +22,8 @@ import {
 	Tooltip,
 	Pagination,
 	Modal,
+	Radio,
+	Popconfirm,
 } from 'ant-design-vue'
 
 Vue.use(FormModel)
@@ -43,5 +45,7 @@ Vue.use(Switch)
 Vue.use(Tooltip)
 Vue.use(Pagination)
 Vue.use(Modal)
+Vue.use(Radio)
+Vue.use(Popconfirm)
 Vue.prototype.$notification = notification
 Vue.prototype.$message = message
